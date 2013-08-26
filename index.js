@@ -52,16 +52,22 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
     var indent = '  '
     this.write(indent+color('pass', results.success+ ' passing'))
     this.write("\n");
-    this.write(indent+color('skip', this.SKIPPED+ ' pending'))
-    this.write("\n");
-    this.write(indent+color('fail', results.failed+ ' failed'))
-    this.write("\n\n");
+
+    if(this.SKIPPED) {
+        this.write(indent+color('skip', this.SKIPPED+ ' pending'))
+        this.write("\n");
+    }
+
+    if(results.failed) {
+        this.write(indent+color('fail', results.failed+ ' failed'))
+        this.write("\n");
+    }
 
     for(var i = 0, len = this.errors.length; i < len; i++) {
-        this.write(indent + (i+1) + ') ' + this.errors[i].test + '\n')
+        this.write('\n'+indent + (i+1) + ') ' + this.errors[i].test + '\n')
         var err = this.errors[i].error.split('\n')
         this.write(indent + '  ' + color('fail', err.shift()) + '\n')
-        this.write(indent + color('stack', err.join('\n')) + '\n')
+        this.write(indent + color('stack', err.join('\n')))
     }
     this.write("\n\n");
   };
