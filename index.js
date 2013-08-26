@@ -11,6 +11,18 @@ var color = function(type, str) {
   return '\u001b[' + colors[type] + 'm' + str + '\u001b[0m';
 }
 
+var format_time = function(time) {
+  var mins = Math.floor(time / 60000);
+  var secs = (time - mins * 60000) / 1000;
+  var str = secs + (secs === 1 ? ' sec' : ' secs');
+
+  if (mins) {
+    str = mins + (mins === 1 ? ' min ' : ' mins ') + str;
+  }
+
+  return str;
+}
+
 var SpecReporter = function(baseReporterDecorator, formatError) {
   baseReporterDecorator(this);
 
@@ -49,17 +61,20 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
   this.onRunComplete = function(browsers, results) {
     this.write("\n\n");
     var indent = '  '
-    this.write(indent+color('pass', results.success+ ' passing'))
-    this.write("\n");
+
+    var self = this
+    browsers.forEach(function(browser) {
+        self.write(indent+'Tests run using: ' + browser.name + ' in ' + format_time(browser.lastResult.totalTime) + '\n')
+    })
+
+    this.write(indent+color('pass', results.success+ ' passing') + '\n')
 
     if(this.SKIPPED) {
-        this.write(indent+color('skip', this.SKIPPED+ ' pending'))
-        this.write("\n");
+        this.write(indent+color('skip', this.SKIPPED+ ' pending') + '\n')
     }
 
     if(results.failed) {
-        this.write(indent+color('fail', results.failed+ ' failed'))
-        this.write("\n");
+        this.write(indent+color('fail', results.failed+ ' failed') + '\n')
     }
 
     for(var i = 0, len = this.errors.length; i < len; i++) {
