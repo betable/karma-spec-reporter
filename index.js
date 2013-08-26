@@ -48,6 +48,7 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
   };
 
   this.onRunComplete = function(browsers, results) {
+    this.write("\n\n");
     var indent = '  '
     this.write(indent+color('pass', results.success+ ' passing'))
     this.write("\n");
