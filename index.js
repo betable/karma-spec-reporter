@@ -58,7 +58,7 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
     this.write("\n\n");
 
     for(var i = 0, len = this.errors.length; i < len; i++) {
-        this.write(indent + (i+1) + ' ' + this.errors[i].test + '\n')
+        this.write(indent + (i+1) + ') ' + this.errors[i].test + '\n')
         var err = this.errors[i].error.split('\n')
         this.write(indent + '  ' + color('fail', err.shift()) + '\n')
         this.write(indent + color('stack', err.join('\n')) + '\n')
