@@ -1,5 +1,16 @@
 require('colors');
 
+var colors = {
+    skip: 36
+  , fail: 31
+  , pass: 32
+  , stack: 90
+}
+
+var color = function(type, str) {
+  return '\u001b[' + colors[type] + 'm' + str + '\u001b[0m';
+}
+
 var SpecReporter = function(baseReporterDecorator, formatError) {
   baseReporterDecorator(this);
 
@@ -14,6 +25,8 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
   this.X_FAILED = ' (%d FAILED)'.red;
   this.TOTAL_SUCCESS = 'TOTAL: %d SUCCESS'.green + '\n';
   this.TOTAL_FAILED = 'TOTAL: %d FAILED, %d SUCCESS'.red + '\n';
+  this.SKIPPED = 0
+  this.errors = []
 
 
   this.onRunStart = function(browsers) {
@@ -35,25 +48,28 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
   };
 
   this.onRunComplete = function(browsers, results) {
-    // the renderBrowser function is defined in karma/reporters/Base.js
-    this.writeCommonMsg(browsers.map(this.renderBrowser).join('\n') + '\n');
-
-    if (browsers.length > 1 && !results.disconnected && !results.error) {
-      if (!results.failed) {
-        this.write(this.TOTAL_SUCCESS, results.success);
-      } else {
-        this.write(this.TOTAL_FAILED, results.failed, results.success);
-      }
-    }
-
+    var indent = '  '
+    this.write(indent+color('pass', results.success+ ' passing'))
     this.write("\n");
+    this.write(indent+color('skip', this.SKIPPED+ ' pending'))
+    this.write("\n");
+    this.write(indent+color('fail', results.failed+ ' failed'))
+    this.write("\n\n");
+
+    for(var i = 0, len = this.errors.length; i < len; i++) {
+        this.write(indent + (i+1) + ' ' + this.errors[i].test + '\n')
+        var err = this.errors[i].error.split('\n')
+        this.write(indent + '  ' + color('fail', err.shift()) + '\n')
+        this.write(indent + color('stack', err.join('\n')) + '\n')
+    }
+    this.write("\n\n");
   };
 
   this.currentSuite = [];
-  this.writeSpecMessage = function(status) {
+  this.writeSpecMessage = function(type) {
     return (function(browser, result) {
       var suite = result.suite
-      var indent = "";
+      var indent = "  ";
       suite.forEach(
         // beware, this in the context of a foreach loop is not what you expect!
         // To be sure, we bind this explicitly
@@ -62,20 +78,28 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
             if (index == 0) {
               this.writeCommonMsg('\n');
             }
-            this.writeCommonMsg(indent + value + ':\n');
+            this.writeCommonMsg(indent + value + '\n');
             this.currentSuite = [];
           }
-          indent += "    ";
+          indent += " ";
         }).bind(this)
       );
       this.currentSuite = suite;
 
       var specName = result.description;
       //TODO: add timing information
-      var msg = '  '  + indent + status + " - " + specName, specName
+      if(type === 'success') {
+          var msg = '  '  + indent + '✓'.green + " " + specName.grey, specName
+      } else if(type === 'skipped') {
+          var msg = '  '  + indent + color('skip','-')+ " " + color('skip', specName), specName
+          this.SKIPPED++
+      } else {
+          var msg = '  '  + indent + color('fail', (this.errors.length+1)+')')+ " " + color('fail', specName), specName
+      }
 
+      var self = this
       result.log.forEach(function(log) {
-        msg += formatError(log, '\t');
+        self.errors.push({ test: specName, error: log})
       });
 
       this.writeCommonMsg(msg + '\n');
@@ -89,9 +113,9 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
     }).bind(this);
   };
 
-  this.specSuccess = this.writeSpecMessage('PASSED '.green);
-  this.specSkipped = this.writeSpecMessage('SKIPPED'.gray);
-  this.specFailure = this.writeSpecMessage('FAILED '.red);
+  this.specSuccess = this.writeSpecMessage('success');
+  this.specSkipped = this.writeSpecMessage('skipped');
+  this.specFailure = this.writeSpecMessage('failed');
 };
 
 SpecReporter.$inject = ['baseReporterDecorator', 'formatError'];
