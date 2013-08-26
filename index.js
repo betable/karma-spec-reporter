@@ -28,7 +28,6 @@ var SpecReporter = function(baseReporterDecorator, formatError) {
   this.SKIPPED = 0
   this.errors = []
 
-
   this.onRunStart = function(browsers) {
     browsers.forEach(function(browser) {
       // useful properties
